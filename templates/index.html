@@ -11,19 +11,19 @@
 {{ if .LoggedIn }}
 <div class="todo-main">
     <div class="todo">
-        {{ if eq .Role "senior" }}
-        <!-- Form for seniors to add new ToDo items -->
+        <label for="chk" aria-hidden="true" style="margin: 40px">Welcome, {{ .Username }}</label>
+        {{ if eq .Role "admin" }}
+        <!-- Form for admins to add new ToDo items -->
         <form id="todoForm" enctype="application/x-www-form-urlencoded">
-            <label for="chk" aria-hidden="true" style="margin: 40px">Welcome, {{ .Username }}</label>
-            <input id="todoInput" type="text" name="todo" required>
-            <button id="addTodoBtn" type="submit">Add ToDo</button>
-        </form>
-        <form id="logoutForm">
-            <button id="logoutBtn" type="submit">Logout</button>
+            <input type="text" name="text" placeholder="Add Your ToDo" required>
+            <button type="submit">Add ToDo</button>
         </form>
         {{ else }}
-        <p>Employees can't add todos.</p>
+        <label for="chk" aria-hidden="true" style="font-size: 15px;margin: 40px">Only admin can add todo!</Label>
         {{ end }}
+        <form id="logoutForm" enctype="application/x-www-form-urlencoded">
+            <button type="submit">Logout</button>
+        </form>
     </div>
 
     <!-- ToDo list -->
@@ -56,7 +56,7 @@
     <input type="checkbox" id="chk" aria-hidden="true">
 
     <div class="signup">
-        <form  id="1"   enctype="application/x-www-form-urlencoded">
+        <form  id="signup"   enctype="application/x-www-form-urlencoded">
             <label for="chk" aria-hidden="true" style="margin: 40px">Sign up</label>
             <input type="text" name="username" placeholder="Username" required>
             <input type="email" name="email" placeholder="Email" required="">
@@ -68,7 +68,7 @@
 
 
     <div class="login">
-        <form  id="2"   enctype="application/x-www-form-urlencoded">
+        <form  id="login"   enctype="application/x-www-form-urlencoded">
             <label for="chk" aria-hidden="true" style="margin: 40px">Login</label>
             <input type="text" name="username" placeholder="Username" required>
             <input type="password" name="password" placeholder="Password" required="">
@@ -79,154 +79,168 @@
 {{ end }}
 </body>
 <script>
-    document.getElementById('1').addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the default form submission
-        const formData = new FormData(this);
-        const jsonData = {
-            username: formData.get('username'),
-            password: formData.get('password'),
-            email: formData.get('email'),
-            role: formData.get('role')
-        };
-        fetch('/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(jsonData)
-        }).then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // If registration is successful, redirect to the root URL
-                    window.location.href = '/';
-                } else {
-                    // If there's an error, check if it's because the user already exists
-                    if (data.error.includes('user already exists')) {
-                        alert('User already exists. Please choose a different username.');
-                    } else {
-                        console.error('Registration failed');
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to login. Check your username');
+    window.addEventListener('DOMContentLoaded', function() {
+        var loggedIn = "{{ .LoggedIn }}";
+        var todoLen = "{{ len .Todos }}"
+
+        if (loggedIn === "false") {
+            document.getElementById('signup').addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent the default form submission
+                const formData = new FormData(this);
+                const jsonData = {
+                    username: formData.get('username'),
+                    password: formData.get('password'),
+                    email: formData.get('email'),
+                    role: formData.get('role')
+                };
+                fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(jsonData)
+                }).then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // If registration is successful, redirect to the root URL
+                            window.location.href = '/';
+                        } else {
+                            // If there's an error, check if it's because the user already exists
+                            if (data.error.includes('user already exists')) {
+                                alert('User already exists. Please choose a different username.');
+                            } else {
+                                console.error('Registration failed');
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to login. Check your username');
+                    });
             });
-    });
 
-    document.getElementById('2').addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the default form submission behavior
+            document.getElementById('login').addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent the default form submission behavior
 
-        const formData = new FormData(this);
-        const jsonData = {
-            username: formData.get('username'),
-            password: formData.get('password'),
-        };
+                const formData = new FormData(this);
+                const jsonData = {
+                    username: formData.get('username'),
+                    password: formData.get('password'),
+                };
 
-        fetch('/login', { // Change '/login' to your actual login endpoint
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(jsonData)
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Login failed');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    // If login is successful, redirect to the root URL
-                    window.location.href = '/';
-                } else {
-                    console.error('Login failed');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to login. Check your username and password.');
-            });
-    });
-
-    document.getElementById('todoForm').addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the default form submission
-        const formData = new FormData(this);
-        const jsonData = {
-            todo: formData.get('todo')
-        };
-        fetch('/add', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(jsonData)
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Adding task failed');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    // If registration is successful, redirect to the root URL
-                    window.location.href = '/';
-                } else {
-                    console.error('Failed to add todo');
-                }
-            })
-            .catch(error => console.error('Error:', error));
-    });
-
-    document.getElementById('toggle-list').forEach(function(checkbox) {
-        checkbox.addEventListener('change', function(event) {
-            var index = event.target.parentNode.querySelector('input[type="hidden"]').value;
-
-            var checked = event.target.checked;
-
-            fetch('/toggle', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ index: index, checked: checked })
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error('Toggle task failed');
-                }
-                return response.json();
-            })
-                .then(data => {
-                    if (data.success) {
-                        // If registration is successful, redirect to the root URL
-                        window.location.href = '/';
-                    } else {
-                        console.error('Failed to toggle todo');
-                    }
+                fetch('/login', { // Change '/login' to your actual login endpoint
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(jsonData)
                 })
-                .catch(error => console.error('Error:', error));
-        });
-    });
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Login failed');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // If login is successful, redirect to the root URL
+                            window.location.href = '/';
+                        } else {
+                            console.error('Login failed');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to login. Check your username and password.');
+                    });
+            });
+        } else {
+            document.getElementById('todoForm').addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent the default form submission
+                const formData = new FormData(this);
+                const jsonData = {
+                    text: formData.get('text')
+                };
+                fetch('/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(jsonData)
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Adding task failed');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (!data.success) {
+                            // If registration is successful, redirect to the root URL
+                            window.location.href = '/';
+                        } else {
+                            console.error('Failed to add todo');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
 
+            if (todoLen !== "0") {
+                document.querySelectorAll('#toggle-list').forEach(function(form) {
+                    form.addEventListener('change', function(event) {
+                        var index = event.target.parentNode.querySelector('input[type="hidden"]').value;
+                        var checked = event.target.checked;
 
-    // Function to handle logout
-    document.getElementById('logoutForm').addEventListener('submit', function(event) {
-        event.preventDefault(); // Prevent the default form submission
-        fetch('/logout', {
-            method: 'GET',
-        })
+                        fetch('/toggle', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ index: index, checked: checked })
+                        })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Toggle task failed');
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                if (data.success) {
+                                    // Если задача успешно изменена на сервере, обновляем список задач на странице
+                                    window.location.reload(); // Перезагружаем страницу для отображения обновленного списка задач
+                                } else {
+                                    console.error('Failed to toggle todo');
+                                }
+                            })
+                            .catch(error => console.error('Error:', error));
+                    });
+                });
+            }
 
-            .then(data => {
-                if (data.success) {
-                    // If registration is successful, redirect to the root URL
-                    window.location.href = '/';
-                } else {
-                    console.error('Failed to toggle todo');
-                }
-            })
-            .catch(error => console.error('Error:', error));
+            document.getElementById('logoutForm').addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent the default form submission
+
+                console.log('Submitting logout form...');
+                fetch('/logout', {
+                    method: 'GET',
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Logout failed');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // If logout is successful, redirect to the root URL
+                            window.location.href = '/';
+                        } else {
+                            console.error('Failed to logout');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+        }
     });
 
 </script>

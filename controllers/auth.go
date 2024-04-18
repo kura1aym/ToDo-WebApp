@@ -20,6 +20,7 @@ var jwtKey = []byte("my_secret_key")
 func WelcomePage(c *gin.Context) {
 	fmt.Println("loggedInUser.ID + ", loggedInUser.ID)
 	fmt.Println("loggedInUser.Role + ", loggedInUser.Role)
+	fmt.Println("LoggedIn + ", loggedInUser.ID != 0)
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"Todos":    todos,
 		"LoggedIn": loggedInUser.ID != 0,
@@ -129,10 +130,21 @@ func AddToDo(c *gin.Context) {
 		return
 	}
 
-	todos = append(todos, todo)
+	todo.UserID = int(loggedInUser.ID)
+	fmt.Println("Added task ", todo)
+	fmt.Println("Added task ", loggedInUser.ID)
+
+	if err := models.DB.Create(&todo).Error; err != nil {
+		c.JSON(500, gin.H{"error": "could not create todo"})
+		return
+	}
 
 	fmt.Println("Added task ", todo)
-	c.Redirect(http.StatusSeeOther, "/")
+
+	todos = append(todos, todo)
+
+	fmt.Println("Added tasks ", todos)
+	c.JSON(http.StatusOK, gin.H{"message": "Task added successfully", "todo": todo})
 }
 
 func Toggle(c *gin.Context) {
